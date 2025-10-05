@@ -19,8 +19,25 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import React from "react";
+import { LucideIcon } from "lucide-react";
 
-const navItems = [
+interface SubNavItem {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  url: string;
+}
+
+interface NavItem {
+  title: string;
+  href?: string;
+  description?: string;
+  icon?: LucideIcon;
+  matcher?: string;
+  items?: SubNavItem[];
+}
+
+const navItems: NavItem[] = [
   {
     title: "Студенты",
     href: "/admin/students",
@@ -35,36 +52,24 @@ const navItems = [
     icon: BarChart,
     matcher: "/admin/reports",
   },
-  {
-    title: "Дополнительно",
-    href: "#",
-    items: [
-      {
-        title: "Блог",
-        description: "Последние новости и обновления",
-        icon: Book,
-        url: "/blog",
-      },
-      {
-        title: "Компания",
-        description: "Наша миссия и ценности",
-        icon: Trees,
-        url: "/company",
-      },
-      {
-        title: "Карьера",
-        description: "Вакансии и возможности",
-        icon: Sunset,
-        url: "/careers",
-      },
-      {
-        title: "Поддержка",
-        description: "Свяжитесь с нашей службой поддержки",
-        icon: Zap,
-        url: "/support",
-      },
-    ],
-  },
+  // {
+  //   title: "Дополнительно",
+  //   href: "#",
+  //   items: [
+  //     {
+  //       title: "Компания",
+  //       description: "Наша миссия и ценности",
+  //       icon: Trees,
+  //       url: "/company",
+  //     },
+  //     {
+  //       title: "Поддержка",
+  //       description: "Свяжитесь с нашей службой поддержки",
+  //       icon: Zap,
+  //       url: "/support",
+  //     },
+  //   ],
+  // },
 ];
 
 const ListItem = React.forwardRef<
@@ -119,16 +124,15 @@ function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
                 </NavigationMenuContent>
               </>
             ) : (
-              <Link href={item.href} legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={cn(
-                    navigationMenuTriggerStyle(),
-                    pathname === item.matcher ? "text-black" : "text-muted-foreground"
-                  )}
-                >
-                  {item.title}
-                </NavigationMenuLink>
-              </Link>
+              <NavigationMenuLink
+                href={item.href}
+                className={cn(
+                  navigationMenuTriggerStyle(),
+                  pathname === item.matcher ? "text-black" : "text-muted-foreground"
+                )}
+              >
+                {item.title}
+              </NavigationMenuLink>
             )}
           </NavigationMenuItem>
         ))}
@@ -176,12 +180,11 @@ export default function AdminHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border bg-card px-4 md:px-6 lg:px-8 rounded-xl shadow-sm backdrop-blur-sm">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border bg-card px-2 md:px-4 rounded-xl backdrop-blur-sm">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
         <Link
           href="/admin/students"
-          className="flex items-center gap-2 text-lg font-semibold md:text-base"
-        >
+          className="flex items-center gap-2 text-lg font-semibold md:text-base">
           <span className="font-bold text-xl">RGSU</span>
         </Link>
         <MainNav />
@@ -201,8 +204,7 @@ export default function AdminHeader() {
           <nav className="grid gap-2 text-lg font-medium p-4">
             <Link
               href="/admin/students"
-              className="flex items-center gap-2 text-lg font-semibold mb-4"
-            >
+              className="flex items-center gap-2 text-lg font-semibold mb-4">
               <span className="font-bold text-xl">RGSU</span>
             </Link>
             {navItems.map((item) => (
@@ -210,12 +212,11 @@ export default function AdminHeader() {
                 {item.items ? (
                   <>
                     <h3 className="text-sm font-semibold mt-4 mb-2">{item.title}</h3>
-                    {item.items.map((subItem) => (
+                    {item.items.map((subItem: SubNavItem) => (
                       <SheetClose asChild key={subItem.url}>
                         <Link
                           href={subItem.url}
-                          className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                        >
+                          className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground">
                           <subItem.icon className="h-5 w-5" />
                           {subItem.title}
                         </Link>
@@ -225,13 +226,12 @@ export default function AdminHeader() {
                 ) : (
                   <SheetClose asChild key={item.href}>
                     <Link
-                      href={item.href}
+                      href={item.href!}
                       className={cn(
                         "mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground",
                         { "bg-muted text-foreground": pathname === item.matcher }
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
+                      )}>
+                      {item.icon && <item.icon className="h-5 w-5" />}
                       {item.title}
                     </Link>
                   </SheetClose>
@@ -248,7 +248,7 @@ export default function AdminHeader() {
         <div className="ml-auto flex items-center space-x-4">
           {user && (
             <>
-              <span className="hidden sm:inline text-gray-700 dark:text-gray-300">
+              <span className="hidden sm:inline text-gray-700 dark:text-gray-300 text-xs md:text-sm">
                 {user.email}
               </span>
               <Button onClick={handleLogout} variant="ghost" className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
