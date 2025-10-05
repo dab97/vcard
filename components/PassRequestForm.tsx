@@ -62,11 +62,12 @@ function PassRequestFormContent() {
   const [customReason, setCustomReason] = React.useState(""); // Для "Другое"
   const [openFioSelect, setOpenFioSelect] = React.useState(false);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [dialogMessage, setDialogMessage] = React.useState("");
+  const [dialogMessage, setDialogMessage] = React.useState<React.ReactNode>(""); // Изменяем тип на React.ReactNode
   const [dialogTitle, setDialogTitle] = React.useState("");
   const [dialogType, setDialogType] = React.useState<"success" | "error">(
     "success"
   );
+  const [isSubmitting, setIsSubmitting] = React.useState(false); // Новое состояние для отслеживания отправки
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["studentsData"],
@@ -116,6 +117,8 @@ function PassRequestFormContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true); // Начинаем отправку
+
     const finalReason = reason === "Другое" ? customReason : reason;
     const selectedStudentLabel =
       filteredStudents.find((s) => s.value === studentFio)?.label || studentFio;
@@ -137,15 +140,21 @@ function PassRequestFormContent() {
       const data = await response.json();
 
       if (response.ok) {
-        setDialogTitle("Ваша заявка успешно отправлена!");
+        setDialogTitle("Заявка успешно отправлена!");
         setDialogMessage(
-          `Студент ${selectedStudentLabel}, направление подготовки "${direction}", группа "${group}" успешно отправил заявку по причине: "${finalReason}".`
+          <>
+            <span className="font-bold text-blue-700">{selectedStudentLabel} </span>
+             оформил(а) заявку по причине:
+            <span className="font-bold"> {finalReason}</span>.
+          </>
         );
         setDialogType("success");
       } else {
         setDialogTitle("Ошибка отправки заявки");
         setDialogMessage(
-          `Произошла ошибка при отправке заявки: ${data.message}. Пожалуйста, попробуйте еще раз.`
+          <>
+            Произошла ошибка при отправке заявки: <span className="font-bold">{data.message}</span>. Пожалуйста, попробуйте еще раз.
+          </>
         );
         setDialogType("error");
       }
@@ -153,11 +162,14 @@ function PassRequestFormContent() {
       console.error("Ошибка при отправке заявки:", error);
       setDialogTitle("Ошибка отправки заявки");
       setDialogMessage(
-        `Произошла непредвиденная ошибка при отправке заявки. Пожалуйста, попробуйте еще раз.`
+        <>
+          Произошла непредвиденная ошибка при отправке заявки. Пожалуйста, попробуйте еще раз.
+        </>
       );
       setDialogType("error");
     } finally {
       setIsDialogOpen(true);
+      setIsSubmitting(false); // Завершаем отправку
     }
 
     // Очистка формы
@@ -315,8 +327,34 @@ function PassRequestFormContent() {
               )}
             </div>
 
-            <Button type="submit" className="w-full">
-              Отправить Заявку
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Отправка...
+                </>
+              ) : (
+                "Отправить Заявку"
+              )}
             </Button>
           </form>
         </CardContent>

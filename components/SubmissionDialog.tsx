@@ -15,7 +15,7 @@ interface SubmissionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  message: string;
+  message: React.ReactNode; // Изменяем тип на React.ReactNode
   type: "success" | "error";
 }
 
