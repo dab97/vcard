@@ -193,7 +193,7 @@ export default function StudentsPage() {
   }
 
   if (error) {
-    return <div className="text-red-500 text-center">Ошибка: {error}</div>;
+    throw new Error(`Failed to fetch students data: ${error}`);
   }
 
   return (
