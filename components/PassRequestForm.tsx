@@ -509,7 +509,7 @@ function PassRequestFormContent() {
             </div>
 
             {isListening && isMobile && (
-              <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-foreground/90 backdrop-blur-xs z-50 min-h-[100dvh] w-screen">
+              <div className="fixed top-0 left-0 right-0 bottom-0 flex items-center justify-center bg-foreground/90 backdrop-blur-xs z-50 min-h-full min-w-full">
                 <div className="flex flex-col items-center p-4 rounded-lg">
                   <Mic className="h-24 w-24 text-white animate-pulse-mic" />
                   <p className="mt-4 text-white text-lg text-center">
