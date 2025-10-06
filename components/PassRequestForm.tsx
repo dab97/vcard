@@ -1,5 +1,96 @@
 "use client"; // Это клиентский компонент, так как использует интерактивность
 
+// Объявления типов для Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionConstructor;
+    webkitSpeechRecognition: SpeechRecognitionConstructor;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    grammars: SpeechGrammarList;
+    lang: string;
+    continuous: boolean;
+    interimResults: boolean;
+    maxAlternatives: number;
+    serviceURI: string;
+
+    onaudiostart: (this: SpeechRecognition, ev: Event) => any;
+    onaudioend: (this: SpeechRecognition, ev: Event) => any;
+    onend: (this: SpeechRecognition, ev: Event) => any;
+    onerror: (this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any;
+    onnomatch: (this: SpeechRecognition, ev: SpeechRecognitionEvent) => any;
+    onresult: (this: SpeechRecognition, ev: SpeechRecognitionEvent) => any;
+    onsoundstart: (this: SpeechRecognition, ev: Event) => any;
+    onsoundend: (this: SpeechRecognition, ev: Event) => any;
+    onspeechstart: (this: SpeechRecognition, ev: Event) => any;
+    onspeechend: (this: SpeechRecognition, ev: Event) => any;
+    onstart: (this: SpeechRecognition, ev: Event) => any;
+
+    abort(): void;
+    start(): void;
+    stop(): void;
+  }
+
+  interface SpeechRecognitionConstructor {
+    new (): SpeechRecognition;
+    prototype: SpeechRecognition;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    readonly results: SpeechRecognitionResultList;
+    readonly resultIndex: number;
+    readonly emma: Document | null;
+    readonly interpretation: any;
+  }
+
+  interface SpeechRecognitionErrorEvent extends Event {
+    readonly error: SpeechRecognitionErrorCode;
+    readonly message: string;
+  }
+
+  interface SpeechRecognitionResultList {
+    [index: number]: SpeechRecognitionResult;
+    readonly length: number;
+    item(index: number): SpeechRecognitionResult;
+  }
+
+  interface SpeechRecognitionResult {
+    [index: number]: SpeechRecognitionAlternative;
+    readonly length: number;
+    item(index: number): SpeechRecognitionAlternative;
+    readonly isFinal: boolean;
+  }
+
+  interface SpeechRecognitionAlternative {
+    readonly transcript: string;
+    readonly confidence: number;
+  }
+
+  interface SpeechGrammarList {
+    [index: number]: SpeechGrammar;
+    readonly length: number;
+    addFromString(string: string, weight?: number): void;
+    addFromURI(src: string, weight?: number): void;
+    item(index: number): SpeechGrammar;
+  }
+
+  interface SpeechGrammar {
+    src: string;
+    weight: number;
+  }
+
+  type SpeechRecognitionErrorCode =
+    | "no-speech"
+    | "aborted"
+    | "audio-capture"
+    | "network"
+    | "not-allowed"
+    | "service-not-allowed"
+    | "bad-grammar"
+    | "language-not-supported";
+}
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,12 +119,13 @@ import {
 } from "@/components/ui/command";
 import { SubmissionDialog } from "@/components/SubmissionDialog"; // Импортируем новый компонент
 
-import { ChevronsUpDown, Check } from "lucide-react"; // Добавляем иконки
+import { ChevronsUpDown, Check, Mic, StopCircle } from "lucide-react"; // Добавляем иконки
 // import Link from "next/link"; // Для ссылки на админку
 import { REASON_OPTIONS } from "@/lib/constants"; // Импортируем константы
 import { useQuery } from "@tanstack/react-query"; // Импортируем useQuery
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // Импортируем QueryClient и QueryClientProvider
 import { PassRequestFormSkeleton } from "@/components/PassRequestFormSkeleton"; // Импортируем компонент скелетона
+import { useIsMobile } from "@/hooks/use-mobile"; // Импортируем хук для определения мобильного устройства
 
 const queryClient = new QueryClient(); // Создаем экземпляр QueryClient
 
@@ -68,6 +160,9 @@ function PassRequestFormContent() {
     "success"
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false); // Новое состояние для отслеживания отправки
+  const [isListening, setIsListening] = React.useState(false); // Состояние для голосового ввода
+  const recognitionRef = React.useRef<SpeechRecognition | null>(null); // Ссылка на объект SpeechRecognition
+  const isMobile = useIsMobile(); // Определяем, является ли устройство мобильным
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["studentsData"],
@@ -178,6 +273,56 @@ function PassRequestFormContent() {
     setStudentFio("");
     setReason("");
     setCustomReason("");
+  };
+
+  // Логика голосового ввода
+  const startListening = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Ваш браузер не поддерживает голосовой ввод.");
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!recognitionRef.current) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = "ru-RU";
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+        console.log("Голосовой ввод начат.");
+      };
+
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        setCustomReason((prev) => (prev ? prev + " " : "") + transcript);
+        setIsListening(false);
+        console.log("Распознанный текст:", transcript);
+      };
+
+      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error("Ошибка голосового ввода:", event.error);
+        setIsListening(false);
+        alert(`Ошибка голосового ввода: ${event.error}`);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+        console.log("Голосовой ввод завершен.");
+      };
+    }
+    
+    recognitionRef.current.start();
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) { // Добавляем проверку isListening
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
   };
 
   if (isLoading) return <PassRequestFormSkeleton />;
@@ -315,15 +460,33 @@ function PassRequestFormContent() {
                 </SelectContent>
               </Select>
               {reason === "Другое" && (
-                <Textarea
-                  id="custom-reason"
-                  placeholder="Опишите причину получения пропуска..."
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  rows={3}
-                  required
-                  className="mt-2 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-primary"
-                />
+                <div className="relative mt-2">
+                  <Textarea
+                    id="custom-reason"
+                    placeholder="Опишите причину получения пропуска..."
+                    value={customReason}
+                    onChange={(e) => setCustomReason(e.target.value)}
+                    rows={3}
+                    required
+                    className="pr-10 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-primary"
+                  />
+                  {isMobile && ( // Отображаем кнопку только на мобильных устройствах
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-2 h-8 w-8"
+                      onClick={isListening ? stopListening : startListening}
+                      disabled={isSubmitting}
+                    >
+                      {isListening ? (
+                        <StopCircle className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <Mic className="h-5 w-5" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
 
