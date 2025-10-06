@@ -475,7 +475,7 @@ function PassRequestFormContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-2 h-8 w-8"
+                      className={`absolute right-2 top-2 h-8 w-8 ${isListening ? "animate-pulse-mic" : ""}`}
                       onClick={isListening ? stopListening : startListening}
                       disabled={isSubmitting}
                     >
