@@ -7,7 +7,19 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Форма заявки на временный пропуск",
-  description: "Сервис для быстрой подачи заявки на оформление временного пропуска. Заполните онлайн-форму и получите доступ в здание максимально просто.",
+  description: "Сервис для быстрой подачи заявки на оформление временного пропуска...",
+  openGraph: {
+    title: "Форма заявки на временный пропуск",
+    description: "Сервис для быстрой подачи заявки на оформление временного пропуска...",
+    images: [
+      {
+        url: "https://vcard-lovat.vercel.app/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Форма заявки пропусков"
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
