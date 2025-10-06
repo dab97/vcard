@@ -475,7 +475,7 @@ function PassRequestFormContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-2 h-8 w-8 ${isListening ? "animate-pulse-mic" : ""}`}
+                      className="absolute right-2 top-2 h-8 w-8"
                       onClick={isListening ? stopListening : startListening}
                       disabled={isSubmitting}
                     >
@@ -489,6 +489,15 @@ function PassRequestFormContent() {
                 </div>
               )}
             </div>
+
+            {isListening && isMobile && (
+              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                <div className="flex flex-col items-center p-4 rounded-lg">
+                  <Mic className="h-24 w-24 text-white animate-pulse-mic" />
+                  <p className="mt-4 text-white text-lg">Слушаю...</p>
+                </div>
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
