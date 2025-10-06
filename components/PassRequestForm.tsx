@@ -161,6 +161,7 @@ function PassRequestFormContent() {
   );
   const [isSubmitting, setIsSubmitting] = React.useState(false); // Новое состояние для отслеживания отправки
   const [isListening, setIsListening] = React.useState(false); // Состояние для голосового ввода
+  const [interimTranscript, setInterimTranscript] = React.useState(""); // Состояние для промежуточного текста
   const recognitionRef = React.useRef<SpeechRecognition | null>(null); // Ссылка на объект SpeechRecognition
   const isMobile = useIsMobile(); // Определяем, является ли устройство мобильным
 
@@ -287,30 +288,45 @@ function PassRequestFormContent() {
     
     if (!recognitionRef.current) {
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognitionRef.current.continuous = true; // Включаем непрерывное распознавание для промежуточных результатов
+      recognitionRef.current.interimResults = true; // Включаем промежуточные результаты
       recognitionRef.current.lang = "ru-RU";
 
       recognitionRef.current.onstart = () => {
         setIsListening(true);
+        setInterimTranscript(""); // Очищаем промежуточный текст при старте
         console.log("Голосовой ввод начат.");
       };
 
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        const transcript = event.results[0][0].transcript;
-        setCustomReason((prev) => (prev ? prev + " " : "") + transcript);
-        setIsListening(false);
-        console.log("Распознанный текст:", transcript);
+        let interim = "";
+        let final = "";
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        setInterimTranscript(interim);
+        if (final) {
+          setCustomReason((prev) => (prev ? prev + " " : "") + final);
+        }
+        console.log("Промежуточный текст:", interim);
+        console.log("Распознанный текст (финальный):", final);
       };
 
       recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error("Ошибка голосового ввода:", event.error);
         setIsListening(false);
+        setInterimTranscript(""); // Очищаем промежуточный текст при ошибке
         alert(`Ошибка голосового ввода: ${event.error}`);
       };
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
+        setInterimTranscript(""); // Очищаем промежуточный текст при завершении
         console.log("Голосовой ввод завершен.");
       };
     }
@@ -319,9 +335,10 @@ function PassRequestFormContent() {
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) { // Добавляем проверку isListening
+    if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
       setIsListening(false);
+      setInterimTranscript(""); // Очищаем промежуточный текст при остановке
     }
   };
 
@@ -491,10 +508,12 @@ function PassRequestFormContent() {
             </div>
 
             {isListening && isMobile && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="fixed inset-0 flex items-center justify-center bg-background/60 backdrop-blur-xs z-50">
                 <div className="flex flex-col items-center p-4 rounded-lg">
                   <Mic className="h-24 w-24 text-white animate-pulse-mic" />
-                  <p className="mt-4 text-white text-lg">Слушаю...</p>
+                  <p className="mt-4 text-white text-lg">
+                    {interimTranscript || "Слушаю..."}
+                  </p>
                 </div>
               </div>
             )}
