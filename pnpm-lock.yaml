@@ -131,6 +131,9 @@ dependencies:
   puppeteer:
     specifier: ^24.23.0
     version: 24.23.0(typescript@5.9.3)
+  puppeteer-core:
+    specifier: ^24.23.0
+    version: 24.23.0
   react:
     specifier: 19.1.0
     version: 19.1.0
