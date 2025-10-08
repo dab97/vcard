@@ -436,9 +436,50 @@ export default function Reports() {
     }
   }, []);
 
-  const exportToPdf = () => {
+  const exportToPdf = async () => {
     console.log("Exporting report to PDF...");
-    // Логика экспорта в PDF (может потребовать сторонние библиотеки, например, jsPDF или отправка на бэкенд)
+
+    const params = new URLSearchParams();
+    if (dateRange?.from) {
+      params.append("fromDate", format(dateRange.from, "yyyy-MM-dd"));
+    }
+    if (dateRange?.to) {
+      params.append("toDate", format(dateRange.to, "yyyy-MM-dd"));
+    }
+    if (selectedGroup !== "all") {
+      params.append("group", selectedGroup);
+    }
+    if (selectedStudent !== "all") {
+      params.append("student", selectedStudent);
+    }
+    selectedStatusFilters.forEach((status) => params.append("status", status));
+    selectedDirectionFilters.forEach((direction) =>
+      params.append("direction", direction)
+    );
+    if (searchTerm) {
+      params.append("searchTerm", searchTerm);
+    }
+
+    try {
+      const response = await fetch(`/api/export-pdf?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      console.log("Report exported to PDF successfully.");
+    } catch (error) {
+      console.error("Ошибка при экспорте отчета в PDF:", error);
+      alert("Не удалось экспортировать отчет в PDF. Пожалуйста, попробуйте еще раз.");
+    }
   };
 
   return (
