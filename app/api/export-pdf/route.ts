@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+
+let puppeteer: any;
+let chromium: any;
+
+if (process.env.VERCEL_ENV === 'production') {
+  // Для Vercel
+  puppeteer = require('puppeteer-core');
+  chromium = require('@sparticuz/chromium');
+} else {
+  // Для локальной разработки
+  puppeteer = require('puppeteer');
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,10 +41,24 @@ export async function GET(req: NextRequest) {
     }
     const reportData = await reportResponse.json();
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    let browser;
+
+    if (process.env.VERCEL_ENV === 'production') {
+      // Конфигурация для Vercel
+      browser = await puppeteer.launch({
+        args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
+        defaultViewport: chromium.defaultViewport,
+        headless: chromium.headless,
+        executablePath: await chromium.executablePath(),
+      });
+    } else {
+      // Конфигурация для локальной разработки
+      browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--hide-scrollbars', '--disable-web-security'],
+        defaultViewport: { width: 1280, height: 720 },
+        headless: true,
+      });
+    }
     const page = await browser.newPage();
 
     let htmlContent = `
@@ -113,8 +138,8 @@ export async function GET(req: NextRequest) {
         'Content-Disposition': 'attachment; filename="report.pdf"',
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating PDF:', error);
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+    return NextResponse.json({ error: `Failed to generate PDF: ${error.message || 'Unknown error'}` }, { status: 500 });
   }
 }
