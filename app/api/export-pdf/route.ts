@@ -7,12 +7,11 @@ let chromium: any;
 
 if (process.env.VERCEL_ENV === 'production') {
   // Для Vercel
-  // Динамический импорт для совместимости с Turbopack
-  puppeteer = import('puppeteer-core');
-  chromium = import('@sparticuz/chromium');
+  puppeteer = require('puppeteer-core');
+  chromium = require('@sparticuz/chromium');
 } else {
   // Для локальной разработки
-  puppeteer = import('puppeteer');
+  puppeteer = require('puppeteer');
 }
 
 export async function GET(req: NextRequest) {
@@ -46,18 +45,15 @@ export async function GET(req: NextRequest) {
 
     if (process.env.VERCEL_ENV === 'production') {
       // Конфигурация для Vercel
-      const resolvedPuppeteer = await puppeteer;
-      const resolvedChromium = await chromium;
-      browser = await resolvedPuppeteer.launch({
-        args: [...resolvedChromium.args, '--hide-scrollbars', '--disable-web-security'],
-        defaultViewport: resolvedChromium.defaultViewport,
-        headless: resolvedChromium.headless,
-        executablePath: await resolvedChromium.executablePath(),
+      browser = await puppeteer.launch({
+        args: [...chromium.args, '--hide-scrollbars', '--disable-web-security'],
+        defaultViewport: chromium.defaultViewport,
+        headless: chromium.headless,
+        executablePath: await chromium.executablePath(),
       });
     } else {
       // Конфигурация для локальной разработки
-      const resolvedPuppeteer = await puppeteer;
-      browser = await resolvedPuppeteer.launch({
+      browser = await puppeteer.launch({
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--hide-scrollbars', '--disable-web-security'],
         defaultViewport: { width: 1280, height: 720 },
         headless: true,
