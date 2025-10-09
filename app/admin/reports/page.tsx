@@ -20,6 +20,8 @@ import { ru } from "date-fns/locale"; // Импортируем русскую �
 import { CalendarIcon, FileDown, Users, User } from "lucide-react";
 import { DateRange } from "react-day-picker"; // Импортируем DateRange
 import { Badge } from "@/components/ui/badge"; // Импортируем компонент Badge
+import PDFExport from "@/components/PDFExport"; // Импортируем новый компонент кнопки
+import { PDFExportProps } from "@/components/PDFExport"; // Импортируем тип пропсов
 
 import {
   Dialog,
@@ -436,52 +438,6 @@ export default function Reports() {
     }
   }, []);
 
-  const exportToPdf = async () => {
-    console.log("Exporting report to PDF...");
-
-    const params = new URLSearchParams();
-    if (dateRange?.from) {
-      params.append("fromDate", format(dateRange.from, "yyyy-MM-dd"));
-    }
-    if (dateRange?.to) {
-      params.append("toDate", format(dateRange.to, "yyyy-MM-dd"));
-    }
-    if (selectedGroup !== "all") {
-      params.append("group", selectedGroup);
-    }
-    if (selectedStudent !== "all") {
-      params.append("student", selectedStudent);
-    }
-    selectedStatusFilters.forEach((status) => params.append("status", status));
-    selectedDirectionFilters.forEach((direction) =>
-      params.append("direction", direction)
-    );
-    if (searchTerm) {
-      params.append("searchTerm", searchTerm);
-    }
-
-    try {
-      const response = await fetch(`/api/export-pdf?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "report.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-      console.log("Report exported to PDF successfully.");
-    } catch (error) {
-      console.error("Ошибка при экспорте отчета в PDF:", error);
-      alert("Не удалось экспортировать отчет в PDF. Пожалуйста, попробуйте еще раз.");
-    }
-  };
-
   return (
     <div className="">
       <div className="grid grid-cols-1 md:grid-cols-9 gap-4">
@@ -698,13 +654,47 @@ export default function Reports() {
                 </Button>
               )}
               {reportResults.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={exportToPdf}
-                  className="w-full sm:w-auto text-xs md:text-sm"
+                <PDFExport
+                  reportTitle="Отчет по заявкам"
+                  dateRange={dateRange}
                 >
-                  <FileDown className="h-4 w-4" /> Экспортировать в PDF
-                </Button>
+                  {({ formattedDateRange }) => (
+                    <div className="pdf-content-wrapper">
+                      <h1 className="report-main-title">Отчет по заявкам</h1>
+                      {formattedDateRange && (
+                        <p className="report-date-range">{formattedDateRange}</p>
+                      )}
+                      <Table className="text-xs md:text-sm">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Дата Заявки</TableHead>
+                            <TableHead>ФИО Студента</TableHead>
+                            <TableHead>Группа</TableHead>
+                            <TableHead>Причина</TableHead>
+                            <TableHead>Статус</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {sortedReportResults.map((entry) => (
+                            <TableRow key={entry.id}>
+                              <TableCell>
+                                {entry.date !== "N/A"
+                                  ? format(new Date(entry.date), "dd.MM.yyyy HH:mm", {
+                                      locale: ru,
+                                    })
+                                  : "N/A"}
+                              </TableCell>
+                              <TableCell>{entry.fio}</TableCell>
+                              <TableCell>{entry.group}</TableCell>
+                              <TableCell>{entry.reason}</TableCell>
+                              <TableCell>{entry.status}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </PDFExport>
               )}
             </div>
           </CardHeader>
