@@ -6,7 +6,7 @@ import { ru } from 'date-fns/locale';
 export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
-export async GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   let browser;
   
   try {
