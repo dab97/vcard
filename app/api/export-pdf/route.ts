@@ -50,6 +50,8 @@ export async function GET(req: NextRequest) {
     if (isVercel) {
       // Для Vercel (production)
       console.log('📦 Loading Vercel dependencies...');
+      // Явно указываем путь к brotli файлам для @sparticuz/chromium
+      process.env.CHROMIUM_BROTLI_PATH = '/var/task/node_modules/@sparticuz/chromium/brotli';
       const chromium = (await import('@sparticuz/chromium')).default;
       puppeteer = await import('puppeteer-core');
       
