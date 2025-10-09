@@ -62,7 +62,8 @@ export async function GET(req: NextRequest) {
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--single-process'
+          '--single-process',
+          '--disable-features=site-per-process'
         ],
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
